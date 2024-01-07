@@ -1,0 +1,69 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kafka-app
+  name: kafka-app
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: kafka-app
+  template:
+    metadata:
+      labels:
+        app: kafka-app
+      name: kafka-app
+      namespace: default
+    spec:
+      containers:
+        - image: ghcr.io/mustafaguc/kafka-app:latest
+          imagePullPolicy: Always
+          name: container-0
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources: {}
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+        - name: my-docker-registry
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-app
+  namespace: default
+spec:
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: kafka-app
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kafka-app
+  namespace: default
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: kafka-app.example.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: kafka-app
+                port:
+                  name: http
+            path: /
+            pathType: Prefix
