@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.stream.IntStream;
+
 /**
  * The LinkProducer class is responsible for producing Link messages to a Kafka topic.
  * It configures the topic, partitions, and replication factor and provides methods for sending Link messages.
@@ -16,7 +17,7 @@ import java.util.stream.IntStream;
 public class LinkProducer {
 
     // Constants for topic configuration
-    private final static int PARTITION_COUNT = 8;
+    private final static int PARTITION_COUNT = 80;
     private final static String TOPIC = "LINKS";
     private final static short REPLICATION_FACTOR = 1;
 
@@ -49,17 +50,27 @@ public class LinkProducer {
      */
     public void sendLinkMessages(List<Link> links) {
         IntStream.range(0, links.size())
-                .forEach(index -> sendLinkMessage(index, links.get(index)));
+                .forEach(index -> sendLinkMessage(links.get(index)));
     }
 
     /**
      * Sends an individual Link message to the configured Kafka topic.
      *
      * @param index The index of the Link message in the list.
-     * @param link The Link object to be sent.
+     * @param link  The Link object to be sent.
      */
     private void sendLinkMessage(int index, Link link) {
         // Sends the Link message to the topic, distributing across partitions based on the index
         kafkaTemplate.send(TOPIC, index % PARTITION_COUNT, "key", link);
+    }
+
+    /**
+     * Sends an individual Link message to the configured Kafka topic.
+     *
+     * @param link The Link object to be sent.
+     */
+    private void sendLinkMessage(Link link) {
+        // Sends the Link message to the topic, distributing across partitions based on the hash code of the link
+        kafkaTemplate.send(TOPIC, "KEY-" + (link.href().hashCode() % PARTITION_COUNT), link);
     }
 }
